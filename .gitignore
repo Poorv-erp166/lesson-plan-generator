@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+uploads/
+*.docx
+temp_generated.docx
+api.txt

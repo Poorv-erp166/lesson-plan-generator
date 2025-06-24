@@ -1,42 +1,43 @@
-from flask import Flask, render_template, request, send_file
 import os
+from flask import Flask, render_template, request, send_file
+from werkzeug.utils import secure_filename
 from lesson_core import extract_text_from_pdf, generate_lesson_plan, save_to_word
 
 app = Flask(__name__)
 UPLOAD_FOLDER = "uploads"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
-@app.route('/')
-def home():
-    return render_template('index.html')
+@app.route("/", methods=["GET", "POST"])
+def index():
+    if request.method == "POST":
+        pdf_file = request.files.get("pdf_file")
+        teacher_name = request.form.get("teacher_name", "")
+        email = request.form.get("email", "")
+        class_section = request.form.get("class_section", "")
+        chapter_text = request.form.get("chapter_text", "")
+        school_name = request.form.get("school_name", "SANSKRUTI- AN ENGLISH MEDIUM SCHOOL")
+        session = request.form.get("session", "SESSION-2025-2026")
+        plan_title = request.form.get("plan_title", "LESSON PLAN (Chapter wise)")
 
-@app.route('/generate', methods=['POST'])
-def generate():
-    if 'pdf' not in request.files:
-        return "❌ No file uploaded."
+        extracted_text = ""
+        if pdf_file and pdf_file.filename != "":
+            filename = secure_filename(pdf_file.filename)
+            pdf_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+            pdf_file.save(pdf_path)
+            extracted_text = extract_text_from_pdf(pdf_path)
+        elif chapter_text.strip():
+            extracted_text = chapter_text.strip()
+        else:
+            return "❌ Please provide either a PDF or text input."
 
-    pdf_file = request.files['pdf']
-    if pdf_file.filename == '':
-        return "❌ No selected file."
+        lesson_plan = generate_lesson_plan(extracted_text, teacher_name, email, class_section, school_name, session, plan_title)
 
-    file_path = os.path.join(UPLOAD_FOLDER, pdf_file.filename)
-    pdf_file.save(file_path)
+        if not lesson_plan:
+            return "❌ Failed to generate lesson plan."
 
-    teacher_name = request.form['teacher_name']
-    email = request.form['email']
-    class_section = request.form['class_section']
+        output_path = "Sanskriti_Lesson_Plan.docx"
+        save_to_word(lesson_plan, school_name, session, plan_title, output_path)
 
-    text = extract_text_from_pdf(file_path)
-    lesson_plan = generate_lesson_plan(text, teacher_name, email, class_section)
+        return send_file(output_path, as_attachment=True)
 
-    output_path = "Sanskriti_Lesson_Plan.docx"
-    save_to_word(lesson_plan, output_path)
-
-    return render_template("result.html", content=lesson_plan)
-
-@app.route('/download')
-def download():
-    return send_file("Sanskriti_Lesson_Plan.docx", as_attachment=True)
-
-if __name__ == '__main__':
-    app.run(debug=True)
+    return render_template("index.html")

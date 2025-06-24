@@ -6,7 +6,7 @@ from docx.shared import Pt
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from docxcompose.composer import Composer
 
-genai.configure(api_key="AIzaSyDxIEmuumujAI8hbvE90GNkLRhUu1YYRo0")  # ← Replace this
+genai.configure(api_key="YOUR_API_KEY")  # ← Replace with your key
 
 def extract_text_from_pdf(file_path):
     text = ""
@@ -29,10 +29,10 @@ SANSKRUTI- AN ENGLISH MEDIUM SCHOOL
 LESSON PLAN (Chapter wise)  
 SESSION-2025-2026
 
-NAME OF THE TEACHER: [{teacher_name}]
-EMAIL ID: [{email}]
-PHONE NO.: [6264728390]
-CLASS & SECTIONS: [{class_section}]
+NAME OF THE TEACHER: {teacher_name}
+EMAIL ID: {email}
+PHONE NO.: 6264728390
+CLASS & SECTIONS: {class_section}
 NAME OF THE CHAPTER/LESSON: 
 OBJECTIVES:
 LEARNING OUTCOMES:
@@ -56,7 +56,6 @@ CHAPTER TEXT:
     """
     try:
         model = genai.GenerativeModel('gemini-1.5-flash')
-        print("🤖 Model to be used: gemini-1.5-flash")
         response = model.generate_content(prompt)
         return response.text if response.text else ""
     except Exception as e:
@@ -70,9 +69,23 @@ def save_to_word(content, output_path="Sanskriti_Lesson_Plan.docx"):
         composer = Composer(template_doc)
 
         new_doc = Document()
-        new_doc.add_heading("SANSKRUTI-AN ENGLISH MEDIUM SCHOOL", level=1).alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-        para = new_doc.add_paragraph("SESSION: 2025–26")
-        para.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+
+        # Heading
+        heading1 = new_doc.add_paragraph("SANSKRUTI- AN ENGLISH MEDIUM SCHOOL")
+        heading1.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        heading1.runs[0].bold = True
+        heading1.runs[0].font.size = Pt(14)
+
+        heading2 = new_doc.add_paragraph("LESSON PLAN (Chapter wise)")
+        heading2.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        heading2.runs[0].bold = True
+        heading2.runs[0].font.size = Pt(12)
+
+        heading3 = new_doc.add_paragraph("SESSION-2025-2026")
+        heading3.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        heading3.runs[0].bold = True
+        heading3.runs[0].font.size = Pt(12)
+
         new_doc.add_paragraph("")
 
         for line in content.split("\n"):
